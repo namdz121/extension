@@ -1,99 +1,125 @@
-import React, { useState } from 'react';
-import type { AnalyzeRequestDTO, AnalyzeResponseDTO } from '../../models/analyze_dto';
+import React, { useEffect, useState } from 'react';
+import '../../assets/style.css';
+import { extractPageMetadata } from '../../utils/dom_parser';
+import type { AnalyzeResponseDTO, AnalyzeRequestDTO } from '../../models/analyze_dto';
+
 import { ProductHeaderView } from '../../views/ProductHeaderView';
 import { AIVerdictView } from '../../views/AIVerdictView';
-import { DealCardItem } from '../../views/DealCardItem';
+import { DealsListView } from '../../views/DealsListView';
 
-export default function App() {
-  const [loading, setLoading] = useState(false);
+export const App: React.FC = () => {
   const [data, setData] = useState<AnalyzeResponseDTO | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [currentRequest, setCurrentRequest] = useState<AnalyzeRequestDTO | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const handleScanAndAnalyze = async () => {
+  const triggerAnalyze = async () => {
     setLoading(true);
-    setError(null);
+    setErrorMsg(null);
 
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) {
-        throw new Error('Không thể kết nối với tab trình duyệt');
+        throw new Error('Không tìm thấy tab trình duyệt hợp lệ.');
       }
 
-      chrome.tabs.sendMessage(tab.id, { action: 'EXTRACT_PAGE_DATA' }, async (domPayload: AnalyzeRequestDTO) => {
-        if (!domPayload) {
-          setError('Không thể đọc dữ liệu trang này (Hãy thử refresh lại trang web).');
-          setLoading(false);
-          return;
-        }
-
-        try {
-          const res = await fetch('http://127.0.0.1:8000/api/v1/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(domPayload)
-          });
-
-          if (!res.ok) {
-            throw new Error(`Server phản hồi lỗi: ${res.status}`);
-          }
-
-          const result: AnalyzeResponseDTO = await res.json();
-          setData(result);
-        } catch (fetchErr: any) {
-          setError('Lỗi kết nối tới Backend FastAPI (127.0.0.1:8000)');
-        } finally {
-          setLoading(false);
-        }
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: extractPageMetadata
       });
+
+      const extracted = results?.[0]?.result;
+      if (!extracted || !extracted.raw_title) {
+        throw new Error('Không tìm thấy thông tin sản phẩm trên trang hiện tại. Hãy cuộn xem tiêu đề sản phẩm.');
+      }
+
+      setCurrentRequest(extracted);
+
+      // Gọi Backend FastAPI
+      const res = await fetch('http://127.0.0.1:8000/api/v1/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(extracted)
+      });
+
+      if (!res.ok) {
+        throw new Error(`Máy chủ backend phản hồi lỗi: ${res.status}`);
+      }
+
+      const resJson: AnalyzeResponseDTO = await res.json();
+      setData(resJson);
     } catch (err: any) {
-      setError(err.message || 'Lỗi không xác định');
+      console.error(err);
+      if (err.message.includes('Failed to fetch')) {
+        setErrorMsg('Không thể kết nối đến Backend (http://127.0.0.1:8000). Hãy kiểm tra xem bạn đã khởi động server FastAPI chưa.');
+      } else {
+        setErrorMsg(err.message || 'Đã xảy ra lỗi khi phân tích.');
+      }
+    } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    triggerAnalyze();
+  }, []);
+
   return (
-    <div style={{ padding: '14px', fontFamily: 'system-ui, sans-serif', width: '100%', boxSizing: 'border-box' }}>
-      <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#0f172a' }}>
-        Smart Price Assistant
-      </h3>
+    <div className="spa-app">
+      {/* Top Navbar */}
+      <header className="spa-navbar">
+        <div className="spa-brand">
+          <span>🛒</span>
+          <span>Smart Price Assistant</span>
+        </div>
+        <span className="spa-badge-status">Sẵn sàng</span>
+      </header>
 
-      <button
-        onClick={handleScanAndAnalyze}
-        disabled={loading}
-        style={{
-          width: '100%',
-          padding: '10px',
-          background: loading ? '#94a3b8' : '#2563eb',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '6px',
-          fontWeight: 700,
-          cursor: loading ? 'not-allowed' : 'pointer',
-          marginBottom: '14px'
-        }}
-      >
-        {loading ? 'AI đang phân tích thị trường...' : '🔍 So sánh giá trang này'}
-      </button>
-
-      {error && (
-        <div style={{ background: '#fef2f2', color: '#b91c1c', padding: '8px', borderRadius: '6px', fontSize: '12px', marginBottom: '12px' }}>
-          {error}
+      {/* Error state */}
+      {errorMsg && (
+        <div className="spa-error-box">
+          <div className="spa-error-title">⚠️ Có lỗi xảy ra</div>
+          <div className="spa-error-desc">{errorMsg}</div>
+          <button onClick={triggerAnalyze} className="spa-btn-retry">
+            Thử lại ngay
+          </button>
         </div>
       )}
 
+      {/* Loading state */}
+      {loading && !data && (
+        <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b' }}>
+          <div style={{ fontSize: '24px', marginBottom: '10px' }}>⏳</div>
+          <div style={{ fontWeight: 600, fontSize: '15px', color: '#1e293b' }}>Đang đối soát giá thị trường...</div>
+          <div style={{ fontSize: '13px', marginTop: '4px' }}>Gemini AI & Tavily đang quét deal</div>
+        </div>
+      )}
+
+      {/* Data display */}
       {data && (
-        <div>
-          <ProductHeaderView entity={data.canonical_entity} />
+        <>
+          <ProductHeaderView
+            entity={data.canonical_entity}
+            rawPrice={currentRequest?.raw_price}
+            imageUrl={currentRequest?.image_data}
+            onRefresh={triggerAnalyze}
+            isLoading={loading}
+          />
+
           <AIVerdictView verdict={data.ai_verdict} />
 
-          <div style={{ fontSize: '13px', fontWeight: 700, margin: '12px 0 8px 0', color: '#334155' }}>
-            Điểm bán đối thủ ({data.deals.length}):
-          </div>
-          {data.deals.map((deal, idx) => (
-            <DealCardItem key={idx} deal={deal} />
-          ))}
-        </div>
+          <DealsListView
+            deals={data.deals}
+            basePrice={data.canonical_entity.normalized_price || currentRequest?.raw_price}
+          />
+        </>
       )}
+
+      <footer className="spa-footer">
+        Dữ liệu được cập nhật và thẩm định tự động bởi AI
+      </footer>
     </div>
   );
-}
+};
+
+export default App;

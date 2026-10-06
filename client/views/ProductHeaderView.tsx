@@ -1,22 +1,56 @@
 import React from 'react';
 import type { CanonicalEntity } from '../models/analyze_dto';
 
-export const ProductHeaderView: React.FC<{ entity: CanonicalEntity }> = ({ entity }) => {
+interface ProductHeaderProps {
+  entity: CanonicalEntity;
+  rawPrice?: number;
+  imageUrl?: string;
+  onRefresh: () => void;
+  isLoading: boolean;
+}
+
+export const ProductHeaderView: React.FC<ProductHeaderProps> = ({
+  entity,
+  rawPrice,
+  imageUrl,
+  onRefresh,
+  isLoading
+}) => {
+  const displayPrice = entity.normalized_price || rawPrice;
+
   return (
-    <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '8px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
-      <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>
-        {entity.category} {entity.brand ? `• ${entity.brand}` : ''}
+    <div className="spa-product-header">
+      <div className="spa-product-row">
+        {imageUrl ? (
+          <img src={imageUrl} alt={entity.model} className="spa-product-img" />
+        ) : (
+          <div className="spa-product-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+            📦
+          </div>
+        )}
+
+        <div className="spa-product-meta">
+          <div className="spa-tag-row">
+            {entity.brand && <span className="spa-brand-tag">{entity.brand}</span>}
+          </div>
+
+          <h2 className="spa-product-title" title={entity.model}>
+            {entity.model || 'Sản phẩm đang chọn'}
+          </h2>
+
+          <div>
+            <span className="spa-price-label">Giá hiện tại:</span>
+            <span className="spa-price-val">
+              {displayPrice ? `${displayPrice.toLocaleString('vi-VN')} ₫` : 'Chưa có giá'}
+            </span>
+          </div>
+        </div>
       </div>
-      <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: '4px 0' }}>
-        {entity.model || 'Sản phẩm không rõ tên'}
-      </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
-        {Object.entries(entity.key_specs).map(([key, value]) => (
-          <span key={key} style={{ fontSize: '11px', background: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>
-            {key}: {String(value)}
-          </span>
-        ))}
-      </div>
+
+      <button onClick={onRefresh} disabled={isLoading} className="spa-btn-refresh">
+        <span>🔄</span>
+        <span>{isLoading ? 'Đang phân tích dữ liệu...' : 'Làm mới / Quét lại'}</span>
+      </button>
     </div>
   );
 };

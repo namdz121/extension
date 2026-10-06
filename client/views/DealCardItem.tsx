@@ -1,25 +1,60 @@
 import React from 'react';
 import type { DealCandidate } from '../models/analyze_dto';
 
-export const DealCardItem: React.FC<{ deal: DealCandidate }> = ({ deal }) => {
-  const badgeColor = deal.match_type === 'EXACT_MATCH' ? '#16a34a' : '#ea580c';
+export interface DealCardItemProps {
+  deal: DealCandidate;
+  basePrice?: number;
+}
+
+export const DealCardItem: React.FC<DealCardItemProps> = ({ deal, basePrice }) => {
+  const getDomainLabel = (urlStr: string) => {
+    try {
+      const hostname = new URL(urlStr).hostname.replace('www.', '');
+      if (hostname.includes('shopee')) return 'Shopee';
+      if (hostname.includes('lazada')) return 'Lazada';
+      if (hostname.includes('cellphones')) return 'CellphoneS';
+      if (hostname.includes('tiki')) return 'Tiki';
+      if (hostname.includes('thegioididong')) return 'TGDD';
+      return hostname.split('.')[0];
+    } catch {
+      return 'Nơi bán';
+    }
+  };
+
+  const priceDiff = basePrice && deal.price > 0 ? deal.price - basePrice : null;
+  const isCheaper = priceDiff !== null && priceDiff < 0;
 
   return (
-    <div style={{ padding: '10px', border: '1px solid #e2e8f0', borderRadius: '6px', marginBottom: '8px', background: '#fff' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '10px', fontWeight: 700, color: badgeColor, background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
-          {deal.match_type} ({deal.composite_score.toFixed(0)}%)
-        </span>
-        <span style={{ fontSize: '13px', fontWeight: 700, color: '#dc2626' }}>
-          {deal.price > 0 ? `${deal.price.toLocaleString('vi-VN')} đ` : 'Xem giá tại web'}
+    <div className="spa-deal-card">
+      <div className="spa-deal-top">
+        <span className="spa-deal-source">🛒 {getDomainLabel(deal.url)}</span>
+        <span className={`spa-deal-badge ${deal.match_type === 'EXACT_MATCH' ? 'exact' : ''}`}>
+          {deal.match_type === 'EXACT_MATCH' ? 'Chuẩn model' : 'Tham khảo'}
         </span>
       </div>
-      <div style={{ fontSize: '12px', fontWeight: 500, margin: '6px 0', color: '#334155' }}>
+
+      <h4 className="spa-deal-title" title={deal.title}>
         {deal.title}
+      </h4>
+
+      <div className="spa-deal-bottom">
+        <div>
+          <div className="spa-deal-price">
+            {deal.price > 0 ? `${deal.price.toLocaleString('vi-VN')} ₫` : 'Xem tại web'}
+          </div>
+          {priceDiff !== null && priceDiff !== 0 && (
+            <div className={`spa-deal-diff ${isCheaper ? 'cheaper' : 'expensive'}`}>
+              {isCheaper
+                ? `▼ Tiết kiệm ${Math.abs(priceDiff).toLocaleString('vi-VN')} ₫`
+                : `▲ Cao hơn ${priceDiff.toLocaleString('vi-VN')} ₫`}
+            </div>
+          )}
+        </div>
+
+        <a href={deal.url} target="_blank" rel="noopener noreferrer" className="spa-deal-btn">
+          Xem ngay ↗
+        </a>
       </div>
-      <a href={deal.url} target="_blank" rel="noreferrer" style={{ fontSize: '11px', color: '#2563eb', textDecoration: 'none', fontWeight: 600 }}>
-        Mở trang bán đối thủ ↗
-      </a>
     </div>
   );
 };

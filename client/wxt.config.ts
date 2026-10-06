@@ -6,8 +6,18 @@ export default defineConfig({
     name: 'Smart Price Assistant',
     description: 'Trợ lý so sánh giá và thẩm định bất động sản thời gian thực bằng AI',
     version: '1.0.0',
-    permissions: ['activeTab', 'sidePanel', 'storage', 'scripting'],
-    host_permissions: ['http://127.0.0.1:8000/*'],
+    permissions: [
+      'activeTab',
+      'sidePanel',
+      'storage',
+      'scripting',
+      'tabs' // Bổ sung quyền này để truy vấn URL và metadata của tab mà không bị giới hạn
+    ],
+    host_permissions: [
+      '*://*/*',
+      '<all_urls>',
+      'http://127.0.0.1:8000/*'
+    ],
     action: {
       default_title: 'Mở Smart Price Assistant'
     },

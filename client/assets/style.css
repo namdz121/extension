@@ -1,0 +1,345 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f1f5f9;
+  color: #1e293b;
+  font-size: 14px;
+  line-height: 1.5;
+  width: 100%;
+  min-height: 100vh;
+}
+html, body {
+  width: 100%;
+  max-width: 420px; /* Cố định chuẩn tỷ lệ 1/3 màn hình laptop thông thường */
+  margin: 0 auto;
+  overflow-x: hidden;
+}
+
+/* App Container */
+.spa-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #ffffff;
+  box-shadow: 0 0 15px rgba(0,0,0,0.05);
+}
+
+/* Header Navbar */
+.spa-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.spa-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.spa-badge-status {
+  font-size: 12px;
+  font-weight: 600;
+  color: #166534;
+  background: #dcfce7;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #bbf7d0;
+}
+
+/* Product Info Card */
+.spa-product-header {
+  padding: 16px;
+  background: #ffffff;
+  border-bottom: 8px solid #f1f5f9;
+}
+
+.spa-product-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.spa-product-img {
+  width: 68px;
+  height: 68px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.spa-product-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.spa-tag-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.spa-brand-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.spa-product-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.4;
+  margin-bottom: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.spa-price-label {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.spa-price-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ee4d2d;
+  margin-left: 6px;
+}
+
+.spa-btn-refresh {
+  margin-top: 14px;
+  width: 100%;
+  padding: 10px;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.spa-btn-refresh:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* AI Verdict Box */
+.spa-verdict-box {
+  margin: 16px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #eef2ff 0%, #f0fdf4 100%);
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+}
+
+.spa-verdict-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #3730a3;
+  margin-bottom: 6px;
+}
+
+.spa-verdict-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1e1b4b;
+}
+
+/* Deals List */
+.spa-deals-container {
+  padding: 0 16px 20px 16px;
+  flex: 1;
+}
+
+.spa-deals-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.spa-deal-card {
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.spa-deal-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.spa-deal-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.spa-deal-source {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2563eb;
+  text-transform: uppercase;
+}
+
+.spa-deal-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.spa-deal-badge.exact {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.spa-deal-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+  margin-bottom: 10px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.spa-deal-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.spa-deal-price {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.spa-deal-diff {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.spa-deal-diff.cheaper {
+  color: #16a34a;
+}
+
+.spa-deal-diff.expensive {
+  color: #dc2626;
+}
+
+.spa-deal-btn {
+  padding: 7px 14px;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.spa-deal-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Error State */
+.spa-error-box {
+  margin: 16px;
+  padding: 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  color: #991b1b;
+}
+
+.spa-error-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.spa-error-desc {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #b91c1c;
+  margin-bottom: 12px;
+}
+
+.spa-btn-retry {
+  padding: 8px 16px;
+  background: #dc2626;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.spa-btn-retry:hover {
+  background: #b91c1c;
+}
+
+/* Footer */
+.spa-footer {
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #94a3b8;
+  border-top: 1px solid #f1f5f9;
+  background: #ffffff;
+}
