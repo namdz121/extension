@@ -9,6 +9,9 @@ from app.models.entity import CanonicalEntity
 
 class NormalizerService:
     def __init__(self):
+        self.reload_credentials()
+
+    def reload_credentials(self):
         self.api_key = settings.GEMINI_API_KEY.strip() if settings.GEMINI_API_KEY else ""
         if self.api_key:
             print(f"[Normalizer] Đã nạp GEMINI_API_KEY thành công (Độ dài: {len(self.api_key)})")
@@ -17,8 +20,9 @@ class NormalizerService:
             print("[Normalizer] CẢNH BÁO: Chưa tìm thấy GEMINI_API_KEY trong settings!")
             self.client = None
 
-        # Danh sách model chuẩn hiện hành
-        self.candidate_models = ["gemini-3.8-flash", "gemini-3.6-flash"]
+        chosen_model = getattr(settings, "GEMINI_MODEL", "gemini-3.1-flash-lite")
+        self.candidate_models = [chosen_model, "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
+        self.candidate_models = list(dict.fromkeys(self.candidate_models))
 
     def _clean_json_text(self, text: str) -> dict:
         cleaned = text.strip()
@@ -44,27 +48,34 @@ class NormalizerService:
             )
 
         prompt = f"""
-        Bạn là hệ thống AI trích xuất thực thể sản phẩm (Entity Normalization).
-        Nhiệm vụ: Lọc sạch từ rác SEO (chính hãng, giá rẻ, freeship, flash sale, quà tặng kèm...).
-        Bóc tách chính xác model, hãng, và các thông số kỹ thuật cốt lõi (key_specs).
+        Bạn là hệ thống AI trích xuất thực thể sản phẩm (Entity Normalization) và tối ưu hóa từ khóa tìm kiếm TMĐT.
+        Nhiệm vụ: Lọc sạch toàn bộ từ rác SEO (chính hãng, giá rẻ, freeship, flash sale, quà tặng, hot trend 2026...).
+        Bóc tách chính xác model, hãng, thông số cốt lõi và TẠO RA 'search_keywords' (Cụm từ khóa tìm kiếm vàng).
 
         DỮ LIỆU ĐẦU VÀO:
         - Tiêu đề thô: "{raw_title}"
         - Mức giá bóc tách sơ bộ: {raw_price if raw_price is not None else "Chưa rõ"}
 
         QUY TẮC ĐỊNH DẠNG:
-        - category: "electronics" | "fashion" | "real_estate" | "general"
+        - category: "electronics" | "home_appliances" | "beauty" | "fashion" | "books" | "real_estate" | "general"
         - brand: Tên thương hiệu chuẩn (hoặc null nếu không rõ)
-        - model: Tên model cụ thể hoặc dự án BĐS
-        - key_specs: Object chứa các thuộc tính thực tế (loại, kết nối, màu, dung lượng...)
+        - model: Tên model cụ thể hoặc dòng sản phẩm chính
+        - key_specs: Object chứa các thuộc tính thực tế (đối_tượng, loại_sản_phẩm, chất_liệu, màu_sắc, kích_cỡ, dung_lượng...)
+          * Với THỜI TRANG / GIÀY DÉP: BẮT BUỘC nhận diện rõ "đối_tượng" (Nữ, Nam, Unisex, Trẻ em) và "loại_sản_phẩm" (Giày thể thao, Sneaker, Guốc, Cao gót, Áo thun, Đầm...).
+        - search_keywords: Cụm từ khóa cô đọng (3-6 từ đắt giá nhất) đại diện chính xác cho sản phẩm:
+          * Với ĐIỆN TỬ: [Hãng] + [Tên máy/Model] + [Phiên bản/Bộ nhớ] (Ví dụ: "TECNO POVA Curve 2 5G 128GB")
+          * Với THỜI TRANG / GIÀY DÉP: [Loại trang phục/giày] + [Đối tượng: nam/nữ/unisex] + [Kiểu dáng/Màu sắc đặc trưng]
+            (Ví dụ: "giày thể thao nữ sneaker trắng", "giày chạy bộ nam", "áo thun nam oversize cotton", "váy hoa nhí dáng xòe")
+          * Nếu có HÌNH ẢNH đính kèm, hãy quan sát màu sắc, hình in/họa tiết để bổ sung vào search_keywords.
         - normalized_price: Nếu 'Mức giá bóc tách sơ bộ' > 0, BẮT BUỘC giữ nguyên số đó.
 
         CHỈ TRẢ VỀ JSON DUY NHẤT:
         {{
-          "category": "electronics",
-          "brand": "SIDOTECH",
-          "model": "LDK V4 Pro",
-          "key_specs": {{"loại": "Bàn phím giả cơ", "kết_nối": "Có dây"}},
+          "category": "fashion",
+          "brand": null,
+          "model": "Giày thể thao nữ sneaker trắng",
+          "search_keywords": "giày thể thao nữ sneaker trắng",
+          "key_specs": {{"đối_tượng": "Nữ", "loại_sản_phẩm": "Giày thể thao", "màu": "Trắng"}},
           "normalized_price": {raw_price if raw_price is not None else "null"}
         }}
         """
@@ -112,7 +123,8 @@ class NormalizerService:
                     brand=parsed.get("brand"),
                     model=parsed.get("model", raw_title[:40]),
                     key_specs=parsed.get("key_specs", {}),
-                    normalized_price=final_price
+                    normalized_price=final_price,
+                    search_keywords=parsed.get("search_keywords")
                 )
             except Exception as err:
                 print(f"[Normalizer] Model {model_name} gặp lỗi: {err}. Thử model tiếp theo...")

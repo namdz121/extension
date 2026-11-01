@@ -7,10 +7,11 @@ ENV_FILE_PATH = os.path.join(BASE_DIR, ".env")
 
 class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int = 8080
     CACHE_TTL: int = 900
     GEMINI_API_KEY: str = ""
     TAVILY_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-3.1-flash-lite"
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,

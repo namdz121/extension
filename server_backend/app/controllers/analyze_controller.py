@@ -35,11 +35,11 @@ async def analyze_product(dto: AnalyzeRequestDTO):
     if dto.raw_price and not canonical.normalized_price:
         canonical.normalized_price = dto.raw_price
 
-    # 2. Search Orchestrator (Tavily Search API)
-    raw_deals = await search_service.search_market(canonical)
+    # 2. Search Orchestrator (Tavily Search API với ưu tiên chéo Shopee <-> TikTok Shop)
+    raw_deals = await search_service.search_market(canonical, current_url=dto.page_url or "")
 
-    # 3. LLM as a Judge (Gemini AI Evaluation với cơ chế dự phòng model)
-    deals, verdict = await judge_service.evaluate(canonical, raw_deals)
+    # 3. LLM as a Judge (Gemini AI Evaluation với ưu tiên nền tảng đối ứng)
+    deals, verdict = await judge_service.evaluate(canonical, raw_deals, current_url=dto.page_url or "")
 
     response = AnalyzeResponseDTO(
         canonical_entity=canonical,

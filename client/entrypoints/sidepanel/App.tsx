@@ -2,16 +2,38 @@ import React, { useEffect, useState } from 'react';
 import '../../assets/style.css';
 import { extractPageMetadata } from '../../utils/dom_parser';
 import type { AnalyzeResponseDTO, AnalyzeRequestDTO } from '../../models/analyze_dto';
+import type { SettingsResponseDTO } from '../../models/settings_dto';
 
 import { ProductHeaderView } from '../../views/ProductHeaderView';
 import { AIVerdictView } from '../../views/AIVerdictView';
 import { DealsListView } from '../../views/DealsListView';
+import { SettingsModal } from '../../views/SettingsModal';
+import { Settings, AlertTriangle } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<AnalyzeResponseDTO | null>(null);
   const [currentRequest, setCurrentRequest] = useState<AnalyzeRequestDTO | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Trạng thái modal cấu hình & đồng bộ .env
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [missingKeys, setMissingKeys] = useState<boolean>(false);
+
+  // Kiểm tra trạng thái cấu hình từ .env
+  const checkKeyStatus = async () => {
+    try {
+      const res = await fetch('http://127.0.0.1:8080/api/v1/settings');
+      if (res.ok) {
+        const settingsData: SettingsResponseDTO = await res.json();
+        const hasGemini = Boolean(settingsData.has_gemini_key || settingsData.gemini_api_key?.trim());
+        const hasTavily = Boolean(settingsData.has_tavily_key || settingsData.tavily_api_key?.trim());
+        setMissingKeys(!hasGemini || !hasTavily);
+      }
+    } catch {
+      // Backend có thể chưa chạy, giữ nguyên
+    }
+  };
 
   const triggerAnalyze = async () => {
     setLoading(true);
@@ -21,6 +43,11 @@ export const App: React.FC = () => {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) {
         throw new Error('Không tìm thấy tab trình duyệt hợp lệ.');
+      }
+
+      const url = tab.url || '';
+      if (!url || url.startsWith('chrome://') || url.startsWith('about:') || url.startsWith('edge://')) {
+        throw new Error('Vui lòng mở một trang web sản phẩm (Shopee, Tiki, Lazada...) để bắt đầu phân tích.');
       }
 
       const results = await chrome.scripting.executeScript({
@@ -36,7 +63,7 @@ export const App: React.FC = () => {
       setCurrentRequest(extracted);
 
       // Gọi Backend FastAPI
-      const res = await fetch('http://127.0.0.1:8000/api/v1/analyze', {
+      const res = await fetch('http://127.0.0.1:8080/api/v1/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(extracted)
@@ -50,8 +77,8 @@ export const App: React.FC = () => {
       setData(resJson);
     } catch (err: any) {
       console.error(err);
-      if (err.message.includes('Failed to fetch')) {
-        setErrorMsg('Không thể kết nối đến Backend (http://127.0.0.1:8000). Hãy kiểm tra xem bạn đã khởi động server FastAPI chưa.');
+      if (err.message?.includes('Failed to fetch')) {
+        setErrorMsg('Không thể kết nối đến Backend (http://127.0.0.1:8080). Hãy kiểm tra xem bạn đã khởi động server FastAPI chưa.');
       } else {
         setErrorMsg(err.message || 'Đã xảy ra lỗi khi phân tích.');
       }
@@ -61,6 +88,7 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
+    checkKeyStatus();
     triggerAnalyze();
   }, []);
 
@@ -72,8 +100,35 @@ export const App: React.FC = () => {
           <span>🛒</span>
           <span>Smart Price Assistant</span>
         </div>
-        <span className="spa-badge-status">Sẵn sàng</span>
+        <div className="spa-nav-actions">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="spa-btn-settings"
+            title="Cài đặt & Đồng bộ .env"
+            aria-label="Cài đặt"
+          >
+            <Settings size={14} />
+            <span>Cài đặt</span>
+          </button>
+          <span className="spa-badge-status">Sẵn sàng</span>
+        </div>
       </header>
+
+      {/* Cảnh báo nếu chưa cấu hình đủ key trong .env */}
+      {missingKeys && (
+        <div className="spa-key-warning-banner">
+          <div className="spa-key-warning-text">
+            <AlertTriangle size={14} />
+            <span>Chưa cấu hình API Key trong file .env</span>
+          </div>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="spa-key-warning-btn"
+          >
+            Cấu hình ngay
+          </button>
+        </div>
+      )}
 
       {/* Error state */}
       {errorMsg && (
@@ -111,6 +166,7 @@ export const App: React.FC = () => {
           <DealsListView
             deals={data.deals}
             basePrice={data.canonical_entity.normalized_price || currentRequest?.raw_price}
+            currentUrl={currentRequest?.page_url}
           />
         </>
       )}
@@ -118,6 +174,16 @@ export const App: React.FC = () => {
       <footer className="spa-footer">
         Dữ liệu được cập nhật và thẩm định tự động bởi AI
       </footer>
+
+      {/* Modal Settings đồng bộ .env */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        onSettingsSaved={() => {
+          checkKeyStatus();
+          triggerAnalyze();
+        }}
+      />
     </div>
   );
 };

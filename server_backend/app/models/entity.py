@@ -7,6 +7,7 @@ class CanonicalEntity(BaseModel):
     model: Optional[str] = None
     key_specs: Dict[str, Any] = {}
     normalized_price: Optional[float] = None
+    search_keywords: Optional[str] = None
 
 class DealCandidate(BaseModel):
     title: str

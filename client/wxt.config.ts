@@ -16,7 +16,7 @@ export default defineConfig({
     host_permissions: [
       '*://*/*',
       '<all_urls>',
-      'http://127.0.0.1:8000/*'
+      'http://127.0.0.1:8080/*'
     ],
     action: {
       default_title: 'Mở Smart Price Assistant'
